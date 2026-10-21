@@ -10,9 +10,10 @@ os.makedirs("figuras", exist_ok=True)
 # deja listo para modelar (una tabla del warehouse exportada a CSV, o el
 # CSV limpio de tu etapa de calidad).
 datos = pd.read_csv('./data/obt_sales.csv')
+print(datos.columns.tolist())
 
 # TODO: reemplaza por el nombre de la columna que tu modelo va a predecir.
-OBJETIVO = "units"
+OBJETIVO = 'UNITS'
 
 # Paso 1: resumen.
 print("Filas y columnas:", datos.shape)

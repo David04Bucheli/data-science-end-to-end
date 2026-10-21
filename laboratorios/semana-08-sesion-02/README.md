@@ -111,13 +111,26 @@ Usa el archivo que tu pipeline de la Semana 7 deja listo para modelar, y la plan
 
 Reemplaza la ruta del archivo y el nombre de la columna que tu modelo va a predecir. Corre los pasos 1 a 3.
 
-_(filas, columnas, faltantes por columna, y cuántos atípicos marcó el IQR en tu objetivo)_
+Trabajé con una muestra aleatoria del CSV completo (~59 millones de filas), así que todas las cifras son estimaciones. La muestra tiene 199,833 filas y 40 columnas. El objetivo es UNITS.
+
+Faltantes por columna:
+
+- SELL_PRICE y REVENUE: 41,600 cada una (20.8%).
+- EVENT_NAME_1 y EVENT_TYPE_1: 183,611 (91.9%). EVENT_NAME_2 y EVENT_TYPE_2: 199,414 (99.8%). Son nulos porque casi ningún día tiene evento, no por error de captura.
+- DATE_KEY_LY_364: 37,620 (18.8%). Corresponde a los días del primer año, que no tienen un día equivalente un año antes (364 de 1,941 días es 18.8%).
+- Las otras 33 columnas no tienen faltantes.
+
+Atípicos: la regla del IQR marcó 23,716 filas (11.9%) en UNITS. Con Q1 = 0 y Q3 = 1 el IQR vale 1 y el límite superior es 2.5, así que marca toda venta de 3 unidades o más.
 
 ### Paso 2: relaciones (10 minutos)
 
 Completa los pasos 4 y 5: la relación entre tu objetivo y la variable que esperas que más influya, y las consultas que confirman lo que encuentres.
 
-_(qué gráfico o consulta hiciste, y qué mostró)_
+La variable de entrada que esperaba que más influyera es SELL_PRICE: a mayor precio, esperaba menos unidades vendidas.
+
+Consulta 1: datos.corr(numeric_only=True)["UNITS"].sort_values(). La correlación de SELL_PRICE con UNITS es -0.15: el signo es el esperado, pero es débil. Las variables de calendario y eventos (mes, trimestre, día de la semana, IS_EVENT_DAY, IS_SNAP, etc.) quedan entre -0.03 y 0.04, es decir casi sin relación lineal. La única correlación alta es REVENUE (0.71), y no se puede usar como entrada (Hallazgo 2).
+
+Consulta 2: datos["UNITS"].value_counts().head() dio 0: 135,873 (68.0%), 1: 26,715, 2: 13,529, 3: 7,272 y 4: 4,483. El objetivo está dominado por ceros, y una correlación lineal es una mala medida para un objetivo así. Por eso las correlaciones salen tan bajas aunque haya relaciones reales.
 
 ### Paso 3: tres hallazgos que afectarían el modelado (10 minutos)
 
@@ -125,15 +138,25 @@ Para cada hallazgo, escribe qué encontraste, el número o el gráfico que lo co
 
 **Hallazgo 1:**
 
-_(tu hallazgo)_
+UNITS es un conteo con 68% de ceros y cola larga, y el IQR marca como atípico algo que no es un error.
+
+La mediana es 0, la media 1.11, la desviación estándar 3.70 y el máximo 301. 135,873 de 199,833 filas (68.0%) tienen 0 unidades. El IQR marca 23,716 filas (11.9%), pero solo porque Q1 y Q3 son 0 y 1, así que toda venta de 3 unidades o más queda como "atípica". Son ventas normales de productos que se venden más, no errores de captura
+
+Qué cambia en el modelo: no quito esas 23,716 filas, porque eliminaría justo las ventas que el modelo tiene que aprender a predecir. Solo reviso el máximo (301) contra su producto, tienda y fecha para ver si es un pico real.
 
 **Hallazgo 2:**
 
-_(tu hallazgo)_
+Hay columnas que contienen la respuesta o se calculan con ella.
+
+REVENUE tiene correlación 0.71 con UNITS, la más alta con diferencia, y el ingreso se calcula como unidades por precio. Tiene exactamente el mismo número de faltantes que SELL_PRICE (41,600), lo que concuerda con REVENUE = UNITS * SELL_PRICE.
+
+Qué cambia en el modelo: saco esas cuatro columnas de las variables de entrada, porque al momento de predecir no se conocen.
 
 **Hallazgo 3:**
 
-_(tu hallazgo)_
+SELL_PRICE tiene 20.8% de faltantes y no parecen al azar.
+
+41,600 filas sin precio. IS_PRE_LAUNCH tiene casi la misma correlación negativa con UNITS (-0.15) que SELL_PRICE (-0.15), lo que sugiere que el precio falta cuando el producto todavía no se vendía en esa tienda y, en esas filas, UNITS sería 0.
 
 ## Antes de la próxima sesión
 
