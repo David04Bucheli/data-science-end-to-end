@@ -22,17 +22,17 @@ A partir de la lectura previa:
 
 **Según el artículo, ¿qué diferencia a una feature que tiene sentido de negocio de una que solo mejora una métrica?**
 
-_(tu respuesta)_
+Una feature con sentido de negocio representa algo real que se puede explicar a las personas del negocio (una que solo mejora una métrica puede subir el rendimiento sin que nadie sepa justificarla). El artículo pide mejorar el poder predictivo manteniendo las features explicables.
 
 **Elige uno de los ejemplos del artículo: ¿qué conocimiento del negocio traduce a una columna, y cómo?**
 
-_(tu respuesta)_
+Los ratios: 5 transacciones online significan cosas distintas si el cliente tiene 100 en total (usa poco el canal) o 5 en total (es 100 % online). El conocimiento es que importa la proporción, no el conteo
 
 ## Pregunta de apertura
 
 La exploración encontró dos patrones que no existen como columnas: la tarifa fija entre JFK y Manhattan, y viajes que cuestan más por kilómetro a ciertas horas. El modelo solo ve columnas. ¿Cómo le das esa información?
 
-_(tu respuesta)_
+Convirtiendo cada patrón en una columna. La tarifa fija sale de origen y destino (es_tarifa_fija), y el costo por hora sale de fecha_hora_inicio (hora, es_hora_pico, hora_sin y hora_cos)
 
 ## Ejercicio 1: features de fecha y hora
 
@@ -40,15 +40,15 @@ Enunciado: [`starter/viajes_taxi.csv`](./starter/viajes_taxi.csv), el mismo data
 
 **Respuesta 1, antes de ver la solución:** si dejas la hora como un número del 0 al 23, ¿qué tan lejos queda la hora 23 de la hora 0 para un modelo que mide distancias entre números? ¿Y en el reloj?
 
-_(tu respuesta)_
+Como número, la hora 23 queda a 23 unidades de la 0, la distancia máxima, aunque en el reloj están a una hora. Con hora_sin y hora_cos la distancia 23 a 0 es 0,261, igual que de 0 a 1.
 
 **Respuesta 2:** la duración del viaje no existe al pedir el taxi, pero la hora sí. ¿Qué parte de lo que la duración le diría al modelo puede traer `es_hora_pico`?
 
-_(tu respuesta)_
+Puede traer el efecto del tráfico típico de esa hora: los viajes en hora pico duran en promedio 27,9 min contra 22,7 fuera de ella. No trae lo propio de cada viaje, como un accidente.
 
 **La formulación completa, tal como la resuelvo yo:**
 
-_(anota aquí el script y lo que mostró, mientras se revisa en clase)_
+
 
 ## Durante el ConcepTest
 
@@ -70,15 +70,15 @@ Solo o en pareja. Parte de la plantilla [`plantilla-ejercicio2/features_de_zona.
 
 **Respuesta 1:** ¿cuántos viajes tienen `es_tarifa_fija` en 1, y qué tarifa mínima y máxima tienen? ¿Qué te dice eso sobre lo que un modelo lineal puede aprender con esta columna?
 
-_(tu respuesta)_
+300 viajes tienen es_tarifa_fija en 1, y su tarifa mínima y máxima es la misma: 70,0. Un modelo lineal puede aprender un salto constante con esta columna (70 contra 21,64 de promedio en el resto), pero no que la tarifa deje de depender de la distancia en esos viajes; para eso haría falta una interacción.
 
 **Respuesta 2:** ¿cuántas columnas crea one-hot para la zona de origen, y cuántas la codificación ordinal? Si el modelo es una regresión lineal, ¿cuál de las dos usarías, y por qué la otra le da información falsa?
 
-_(tu respuesta)_
+One-hot crea 8 columnas y la ordinal crea 1. Usaría one-hot: la ordinal inventa un orden y unas distancias que no existen (Upper West Side valdría 7 veces Brooklyn, y JFK quedaría entre Harlem y Lower Manhattan), y la regresión lineal las usaría como una escala.
 
 **Respuesta 3:** ¿qué columnas del dataset no existen al pedir el taxi? ¿Qué pasaría con el modelo si las usaras para entrenar?
 
-_(tu respuesta)_
+No existen duracion_min, metodo_pago, tarifa ni propina. Usarlas sería fuga de información: el modelo se vería excelente al entrenar y evaluar, pero en producción esas columnas no existirían.
 
 ## Ejercicio 3: dos features para tu proyecto
 
@@ -88,13 +88,13 @@ Usa el mismo archivo de la exploración de la Semana 8 y la plantilla [`plantill
 
 Escribe qué predice tu modelo y en qué momento: qué información existe en ese instante y cuál todavía no.
 
-_(tu respuesta)_
+Mi modelo predice UNITS, las unidades vendidas de un producto en una tienda en un día, antes de que ocurra el día. Ya existen el calendario, los eventos, SNAP, el precio, la tienda y la categoría. No existen REVENUE (sale de UNITS) ni IS_SALES_SPIKE e IS_SUSPECTED_STOCKOUT_* (se marcan mirando las ventas ya ocurridas)
 
 ### Paso 2: construye las 2 features (15 minutos)
 
 Completa la plantilla con 2 columnas nuevas, derivadas de las existentes. Al menos una tiene que salir de uno de tus hallazgos de la exploración.
 
-_(el código de cada feature)_
+Revisar código. 
 
 ### Paso 3: justifica cada feature (5 minutos)
 
@@ -102,11 +102,11 @@ Para cada una: de qué hallazgo o conocimiento del dominio sale, qué evidencia 
 
 **Feature 1:**
 
-_(tu justificación)_
+en_descuento: sale del conocimiento del dominio: las promociones suben las ventas. Evidencia: UNITS promedia 1,76 con descuento contra 1,06 sin descuento. Existe al predecir porque el precio se fija de antemano. Es binaria, no necesita codificación.
 
 **Feature 2:**
 
-_(tu justificación)_
+snap_fin_de_semana: combina SNAP (beneficio que se cobra en días fijos del mes) con el fin de semana, cuando se compra más. Evidencia: UNITS promedia 1,45 en esos días contra 1,08 en el resto. El calendario se conoce de antemano. También es binaria; para CAT_ID o STORE_ID usaría one-hot si el modelo es lineal.
 
 ## Antes de la próxima sesión
 
@@ -114,4 +114,4 @@ _(tu justificación)_
 
 Para escalar la distancia antes de entrenar, le restas la media y la divides por la desviación estándar. ¿Con qué viajes calculas esa media: con todos, o solo con los de entrenamiento? ¿Cambia algo?
 
-_(tu respuesta)_
+Solo con los de entrenamiento. Si uso todos los viajes, la prueba entra al cálculo de la media y hay fuga de información. Con muchos datos el número cambia poco, pero la evaluación deja de simular producción.

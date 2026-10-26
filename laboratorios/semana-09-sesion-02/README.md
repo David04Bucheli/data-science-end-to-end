@@ -30,17 +30,17 @@ A partir de la lectura previa:
 
 **Según el artículo, ¿qué es la fuga de información, y por qué un modelo con fuga puede verse excelente en la evaluación y fallar en producción?**
 
-_(tu respuesta)_
+Es cuando información que el modelo no debería tener (del conjunto de prueba, o que solo se conoce después del evento) se cuela en el entrenamiento. Las métricas salen infladas, y en producción esa información no existe, así que el modelo falla.
 
 **El artículo describe varias formas en que se produce una fuga. ¿Cuál de ellas viste la sesión pasada con la duración del viaje?**
 
-_(tu respuesta)_
+La de variables que no están disponibles al momento de predecir: la duración solo se conoce cuando el viaje termina.
 
 ## Pregunta de apertura
 
 Para escalar la distancia, le restas la media y la divides por la desviación estándar. ¿Con qué viajes calculas esa media: con todos, o solo con los de entrenamiento? ¿Cambia algo?
 
-_(tu respuesta)_
+Solo con los de entrenamiento. Con todos, el conjunto de prueba influye en el escalado, que es una fuga. Con muchos datos el cambio es pequeño, pero la evaluación deja de ser honesta.
 
 ## Ejercicio 1: encontrar y corregir la fuga
 
@@ -48,11 +48,11 @@ Enunciado: [`starter/viajes_features.csv`](./starter/viajes_features.csv) tiene 
 
 **Respuesta 1, antes de ver la solución:** ¿en qué línea entra el conjunto de prueba al entrenamiento?
 
-_(tu respuesta)_
+En la línea que imputa y escala con todo el dataset, antes de dividir en entrenamiento y prueba.
 
 **Respuesta 2:** ¿cuánto esperas que cambie el error absoluto medio en prueba al corregir la fuga? Si casi no cambia, ¿significa que no había fuga?
 
-_(tu respuesta)_
+Esperaría un cambio muy pequeño (al correrlo fue de 0,0001). Que casi no cambie no significa que no hubiera fuga: con casi 3.000 filas, el 20 % de prueba mueve muy poco la mediana y la media, pero el error de procedimiento sigue ahí.
 
 **La formulación completa, tal como la resuelvo yo:**
 
@@ -78,15 +78,15 @@ Solo o en pareja. Parte de la plantilla [`plantilla-ejercicio2/pipeline_completo
 
 **Respuesta 1:** ¿cuántas columnas quedan después de preparar los datos? Explica de dónde sale ese número a partir de los tres grupos de columnas.
 
-_(tu respuesta)_
+Quedan 25 columnas: 2 numéricas (distancia y pasajeros) + 18 del one-hot (8 de zona_origen, 8 de zona_destino y 2 de metodo_pago) + 5 que pasan sin cambios.
 
 **Respuesta 2:** ¿las medianas que aprendió el imputador coinciden con las de entrenamiento o con las de todo el dataset? ¿Qué demuestra eso?
 
-_(tu respuesta)_
+Coinciden con las de entrenamiento (6,94 y 1), no con las de todo el dataset (6,93 y 1). Eso demuestra que el imputador aprendió solo con entrenamiento.
 
 **Respuesta 3:** ¿qué le pasa al viaje desde el Bronx? ¿Qué habría pasado con `pd.get_dummies` aplicado por separado a ese viaje?
 
-_(tu respuesta)_
+Ninguna columna de zona_origen queda en 1: con handle_unknown="ignore" toda la fila queda en ceros y no hay error. Con pd.get_dummies sobre ese viaje solo saldría una columna origen_Bronx, y no coincidiría con las columnas del modelo.
 
 ## Ejercicio 3: el pipeline de tu proyecto
 
@@ -96,19 +96,25 @@ Usa tu archivo con las 2 features de la sesión pasada y la plantilla [`plantill
 
 Escribe qué columnas son numéricas, cuáles categóricas y cuáles ya están listas, y cuál es el objetivo. Deja fuera toda columna que no exista al momento de predecir.
 
-_(tu clasificación)_
+- Objetivo: UNITS
+- Numéricas: SELL_PRICE, precio_relativo
+- Categóricas: CAT_ID, STORE_ID
+- Ya listas: en_descuento, snap_fin_de_semana
+- Fuera: REVENUE, IS_SALES_SPIKE e IS_SUSPECTED_STOCKOUT_*, que no existen al predecir.
 
 ### Paso 2: decide cómo dividir (5 minutos)
 
 ¿Tu modelo predice el futuro a partir de filas con fecha? Si sí, divide por fecha; si no, al azar. Justifica.
 
-_(tu decisión)_
+Divido por fecha. El modelo predice ventas futuras a partir de filas con fecha, así que entreno con el 80 % más antiguo (hasta el 29-04-2015) y pruebo con el 20 % más reciente. Un corte al azar mezclaría días futuros en el entrenamiento.
 
 ### Paso 3: construye y corre el pipeline (15 minutos)
 
 Completa la plantilla y córrela. Anota la forma de los conjuntos de entrenamiento y prueba ya preparados, y la lista de columnas que produce.
 
-_(lo que imprimió tu pipeline)_
+Fecha de corte: 2015-04-29
+Entrenamiento: (159871, 17) Prueba: (39962, 17)
+['numericas__SELL_PRICE', 'numericas__precio_relativo', 'categoricas__CAT_ID_FOODS', 'categoricas__CAT_ID_HOBBIES', 'categoricas__CAT_ID_HOUSEHOLD', 'categoricas__STORE_ID_CA_1', 'categoricas__STORE_ID_CA_2', 'categoricas__STORE_ID_CA_3', 'categoricas__STORE_ID_CA_4', 'categoricas__STORE_ID_TX_1', 'categoricas__STORE_ID_TX_2', 'categoricas__STORE_ID_TX_3', 'categoricas__STORE_ID_WI_1', 'categoricas__STORE_ID_WI_2', 'categoricas__STORE_ID_WI_3', 'ya_listas__en_descuento', 'ya_listas__snap_fin_de_semana']
 
 ## Antes de la próxima sesión
 
@@ -116,4 +122,4 @@ _(lo que imprimió tu pipeline)_
 
 Ya tienes los datos listos para entrenar. Si entrenas dos modelos sobre el mismo conjunto y uno da un error mucho menor en entrenamiento que en prueba, ¿qué le está pasando?
 
-_(tu respuesta)_
+Está sobreajustando (overfitting): memorizó el entrenamiento, incluido el ruido, y no generaliza a datos nuevos.
