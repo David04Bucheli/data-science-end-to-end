@@ -1,0 +1,20 @@
+artifact_path: modelo_tuberia
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.11.18
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.5.2
+mlflow_version: 2.17.2
+model_size_bytes: 38829653
+model_uuid: 667117ad5b1349bbbca245f030679839
+run_id: e49428b2c9324298922e0809bcbf691d
+utc_time_created: '2026-11-04 17:37:22.881489'
