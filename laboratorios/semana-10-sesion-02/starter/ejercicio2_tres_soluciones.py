@@ -98,15 +98,15 @@ def escribir_prompt():
 
 
 # TODO 1: la red neuronal del Ejercicio 1, con el nombre "red neuronal".
-red = None
+red = evaluar("red neuronal", MLPRegressor(hidden_layer_sizes=(64,), max_iter=1000, random_state=42))
 
 # TODO 2: el ensamblaje del Ejercicio 1, con el nombre "gradient boosting".
-ensamblaje = None
+ensamblaje = evaluar("gradient boosting", GradientBoostingRegressor(random_state=42))
 
 # TODO 3: mae_red_muestra y mae_ensamblaje_muestra, el error absoluto
 # medio de cada modelo sobre los 20 viajes de muestra.
-mae_red_muestra = None
-mae_ensamblaje_muestra = None
+mae_red_muestra = mean_absolute_error(y_muestra, red.predict(muestra))
+mae_ensamblaje_muestra = mean_absolute_error(y_muestra, ensamblaje.predict(muestra))
 
 prompt = escribir_prompt()
 print()
@@ -114,17 +114,26 @@ print("prompt_llm.txt escrito:", len(prompt), "caracteres")
 
 # Paso 4: predicciones_llm, la lista de 20 numeros de respuestas_llm.txt,
 # y mae_llm, su error absoluto medio sobre los mismos 20 viajes.
-predicciones_llm = None
-mae_llm = None
+with open("resultado_llm.txt") as archivo:
+    predicciones_llm = [float(linea) for linea in archivo if linea.strip()]
+mae_llm = mean_absolute_error(y_muestra, predicciones_llm)
 
 # Paso 5: el costo de estimar 10 000 viajes al mes con el LLM, en
 # dolares, en costo_10000. Busca en la pagina de precios del proveedor
 # que usaste el precio por millon de tokens de entrada y anotalo abajo.
 # Cuenta un token cada 4 caracteres, y un prompt como este por cada 20
 # viajes; ignora los tokens de salida.
-PRECIO_POR_MILLON_DE_TOKENS = None
-costo_10000 = None
+PRECIO_POR_MILLON_DE_TOKENS = 2.0
+tokens_por_prompt = len(prompt) / 4          # un token cada 4 caracteres
+prompts_al_mes = 10000 / 20                  # un prompt por cada 20 viajes
+costo_10000 = tokens_por_prompt * prompts_al_mes / 1_000_000 * PRECIO_POR_MILLON_DE_TOKENS
 
+print()
+print("Error absoluto medio en los 20 viajes de muestra")
+print(f"  gradient boosting: {mae_ensamblaje_muestra:.4f}")
+print(f"  red neuronal:      {mae_red_muestra:.4f}")
+print(f"  LLM:               {mae_llm:.4f}")
+print(f"Costo de 10 000 viajes al mes con el LLM: {costo_10000:.4f} USD")
 
 def comprobar(numero, condicion):
     if condicion:
@@ -139,6 +148,6 @@ comprobar(1, red is not None and red.named_steps["modelo"].n_iter_ < 1000)
 comprobar(2, ensamblaje is not None and isinstance(ensamblaje.named_steps["modelo"], GradientBoostingRegressor))
 comprobar(3, mae_red_muestra is not None and mae_ensamblaje_muestra is not None
           and 0 < mae_red_muestra < 3 and 0 < mae_ensamblaje_muestra < 3)
-comprobar(4, os.path.exists("respuestas_llm.txt") and predicciones_llm is not None
+comprobar(4, os.path.exists("resultado_llm.txt") and predicciones_llm is not None
           and len(predicciones_llm) == 20 and mae_llm is not None)
 comprobar(5, PRECIO_POR_MILLON_DE_TOKENS is not None and costo_10000 is not None and costo_10000 > 0)
