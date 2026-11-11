@@ -14,7 +14,7 @@ pandas y matplotlib ya vienen en el Codespace. En tu laptop, instálalos con `pi
 python3 -c "import matplotlib; print(matplotlib.__version__)"
 ```
 
-Los scripts de hoy guardan cada gráfico como imagen en una carpeta `figuras/`. Ábrelas desde el explorador de archivos de VS Code. También puedes correr el mismo código en un notebook de Jupyter (en el Codespace, crea un archivo `.ipynb` y elige el kernel de Python 3.11), donde el gráfico aparece debajo de la celda.
+Los laboratorios de hoy son notebooks de Jupyter, como el diagnóstico de la Semana 4: cada gráfico aparece debajo de la celda que lo dibuja. Una exploración se lee para decidir qué hacer con los datos; por eso va en un notebook y no en un script.
 
 ## Antes de empezar
 
@@ -44,19 +44,14 @@ Mirando solo el resultado final probablemente no lo notaría, vería un RMSE alt
 
 ## Ejercicio 1: resumen, distribución y atípicos
 
-Archivo: [`starter/ejercicio1_explorar.py`](./starter/ejercicio1_explorar.py), sobre [`starter/viajes_taxi.csv`](./starter/viajes_taxi.csv): 3000 viajes en taxi de Nueva York, con fecha y hora de inicio, zona de origen y de destino, distancia, duración, pasajeros, método de pago, tarifa y propina. El script ya lee el archivo, arma los gráficos y los guarda en `figuras/`; faltan 4 `TODO`. Córrelo una vez antes de tocar nada:
-
-```
-cd laboratorios/semana-08-sesion-02/starter
-python3 ejercicio1_explorar.py
-```
+Notebook: [`starter/ejercicio1_explorar.ipynb`](./starter/ejercicio1_explorar.ipynb), sobre [`starter/viajes_taxi.csv`](./starter/viajes_taxi.csv): 3000 viajes en taxi de Nueva York, con fecha y hora de inicio, zona de origen y de destino, distancia, duración, pasajeros, método de pago, tarifa y propina. Ya lee el archivo y arma los gráficos; faltan 4 `TODO`. Córrelo completo una vez antes de tocar nada (**Run All**).
 
 **Respuesta 1 (TODO 1), antes de ver la solución:** en `describe()`, ¿qué dos valores de la tabla te harían sospechar de un error sin necesidad de graficar nada?
 
 1. tarifa máximo = 999.99: está muy lejos del percentil 75 (32.55) y es un número "redondo" típico de un código de error.
 2. duracion_min mínimo = -74: una duración negativa es imposible.
 
-**Respuesta 2 (TODO 2):** abre `figuras/hist_tarifa.png` después del TODO 2. ¿Por qué casi todo el histograma queda comprimido a la izquierda?
+**Respuesta 2 (TODO 2):** mira el histograma después del TODO 2. ¿Por qué casi todo el histograma queda comprimido a la izquierda?
 
 No, no todos son errores. El IQR solo marca lo que está lejos de la mayoría, no lo que es incorrecto.
 
@@ -96,11 +91,7 @@ _(tu respuesta)_
 
 ## Ejercicio 2: relaciones entre variables
 
-Solo o en pareja. Archivo: [`starter/ejercicio2_relaciones.py`](./starter/ejercicio2_relaciones.py), sobre el mismo `viajes_taxi.csv`. Quita solo los errores que el Ejercicio 1 ya confirmó y completa los 5 `TODO`: dispersión de distancia contra tarifa, propina por método de pago, correlaciones con la tarifa, y pasajeros vacíos o en 0. Al final, el script imprime una comprobación por TODO: completa los 5 hasta que todas digan `OK`.
-
-```
-python3 ejercicio2_relaciones.py
-```
+Solo o en pareja. Notebook: [`starter/ejercicio2_relaciones.ipynb`](./starter/ejercicio2_relaciones.ipynb), sobre el mismo `viajes_taxi.csv`. Quita solo los errores que el Ejercicio 1 ya confirmó y completa los 5 `TODO`: dispersión de distancia contra tarifa, propina por método de pago, correlaciones con la tarifa, y pasajeros vacíos o en 0. La última celda imprime una comprobación por TODO: completa los 5 hasta que todas digan `OK`.
 
 **Hallazgo 1: qué muestra el gráfico de distancia contra tarifa, además de la tendencia general.**
 
@@ -116,10 +107,11 @@ No. La correlación de duración con tarifa es 0.956, casi igual a la de distanc
 
 ## Ejercicio 3: explora el dataset de tu proyecto
 
-Usa el archivo que tu pipeline de la Semana 7 deja listo para modelar, y la plantilla [`plantilla-eda/explorar_proyecto.py`](./plantilla-eda/explorar_proyecto.py).
+Usa el archivo que tu pipeline de la Semana 7 deja listo para modelar. Copia la plantilla [`plantilla-eda/explorar_proyecto.ipynb`](./plantilla-eda/explorar_proyecto.ipynb) a `psets/proyecto/modelado/`: el notebook es tu entregable, con el código, lo que mostró y lo que concluyes en el mismo lugar.
 
 ### Paso 1: resumen y variable objetivo (5 minutos)
 
+<<<<<<< HEAD
 Reemplaza la ruta del archivo y el nombre de la columna que tu modelo va a predecir. Corre los pasos 1 a 3.
 
 Trabajé con una muestra aleatoria del CSV completo (~59 millones de filas), así que todas las cifras son estimaciones. La muestra tiene 199,833 filas y 40 columnas. El objetivo es UNITS.
@@ -142,13 +134,21 @@ La variable de entrada que esperaba que más influyera es SELL_PRICE: a mayor pr
 Consulta 1: datos.corr(numeric_only=True)["UNITS"].sort_values(). La correlación de SELL_PRICE con UNITS es -0.15: el signo es el esperado, pero es débil. Las variables de calendario y eventos (mes, trimestre, día de la semana, IS_EVENT_DAY, IS_SNAP, etc.) quedan entre -0.03 y 0.04, es decir casi sin relación lineal. La única correlación alta es REVENUE (0.71), y no se puede usar como entrada (Hallazgo 2).
 
 Consulta 2: datos["UNITS"].value_counts().head() dio 0: 135,873 (68.0%), 1: 26,715, 2: 13,529, 3: 7,272 y 4: 4,483. El objetivo está dominado por ceros, y una correlación lineal es una mala medida para un objetivo así. Por eso las correlaciones salen tan bajas aunque haya relaciones reales.
+=======
+Reemplaza la ruta del archivo y el nombre de la columna que tu modelo va a predecir. Corre los pasos 1 a 3: filas, columnas, faltantes por columna, la distribución del objetivo y cuántos atípicos marca el IQR.
+
+### Paso 2: relaciones (10 minutos)
+
+Completa el paso 4: la relación entre tu objetivo y la variable que esperas que más influya.
+>>>>>>> 0459292cee18bfab206bcbb0deb753978024219a
 
 ### Paso 3: tres hallazgos que afectarían el modelado (10 minutos)
 
-Para cada hallazgo, escribe qué encontraste, el número o el gráfico que lo confirma, y qué cambia en el modelo por su causa (una fila que quitas, una columna que no puedes usar, una variable que hay que transformar).
+En el paso 5 del notebook, para cada hallazgo: una celda de código con el número o el gráfico que lo confirma, y debajo, en la celda de texto, qué encontraste y qué cambia en el modelo por su causa (una fila que quitas, una columna que no puedes usar, una variable que hay que transformar). Antes de hacer commit, reinicia el kernel y corre todo.
 
-**Hallazgo 1:**
+**Ruta de tu notebook de exploración en tu fork:**
 
+<<<<<<< HEAD
 UNITS es un conteo con 68% de ceros y cola larga, y el IQR marca como atípico algo que no es un error.
 
 La mediana es 0, la media 1.11, la desviación estándar 3.70 y el máximo 301. 135,873 de 199,833 filas (68.0%) tienen 0 unidades. El IQR marca 23,716 filas (11.9%), pero solo porque Q1 y Q3 son 0 y 1, así que toda venta de 3 unidades o más queda como "atípica". Son ventas normales de productos que se venden más, no errores de captura
@@ -168,6 +168,9 @@ Qué cambia en el modelo: saco esas cuatro columnas de las variables de entrada,
 SELL_PRICE tiene 20.8% de faltantes y no parecen al azar.
 
 41,600 filas sin precio. IS_PRE_LAUNCH tiene casi la misma correlación negativa con UNITS (-0.15) que SELL_PRICE (-0.15), lo que sugiere que el precio falta cuando el producto todavía no se vendía en esa tienda y, en esas filas, UNITS sería 0.
+=======
+_(tu respuesta)_
+>>>>>>> 0459292cee18bfab206bcbb0deb753978024219a
 
 ## Antes de la próxima sesión
 
