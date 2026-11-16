@@ -11,37 +11,64 @@ Para comprobar que corre de principio a fin, sin notebook:
     python3 pipeline_proyecto.py
 """
 
+import numpy as np
 import pandas as pd
+import sklearn
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, TargetEncoder
 
-# TODO: el mismo archivo de tu notebook de features de la sesion pasada.
-RUTA_DATOS = "../data/processed/TODO_archivo.csv"
+RUTA_DATOS = "/workspaces/data-science-end-to-end/laboratorios/semana-08-sesion-02/plantilla-eda/obt_sales.csv"
 
-OBJETIVO = "TODO_columna_objetivo"
-NUMERICAS = ["TODO_numerica_1", "TODO_numerica_2"]
-CATEGORICAS = ["TODO_categorica_1"]
-YA_LISTAS = []
+OBJETIVO = "UNITS"
+NUMERICAS = ["PRECIO_LOG", "WDAY"]
+CATEGORICAS = ["DEPT_ID", "STORE_ID"]
+YA_LISTAS = ["SEMANA_SIN", "SEMANA_COS", "IS_SNAP", "IS_WEEKEND", "IS_EVENT_DAY", "IS_PRE_LAUNCH"]
+PRODUCTO = ["ITEM_ID"]
+
+# Las columnas que recibe el modelo, en el orden de la preparacion.
+COLUMNAS_ENTRADA = NUMERICAS + CATEGORICAS + YA_LISTAS + PRODUCTO
+
+# Todo lo que sea de la fecha de corte en adelante es prueba.
+FECHA_CORTE = 20150430
+
+# No entran, porque se calculan con UNITS o dependen de que ya se haya
+# vendido: REVENUE, IS_SALES_SPIKE, IS_SUSPECTED_STOCKOUT_CONSERVATIVE,
+# IS_SUSPECTED_STOCKOUT_NB. Si entraran, el modelo veria la respuesta.
+
+
+def codificador_producto():
+    # la semilla de la validacion cruzada interna se pasa distinto segun la
+    # version de scikit-learn: desde la 1.9 va dentro de cv
+    version = tuple(int(n) for n in sklearn.__version__.split(".")[:2])
+    if version >= (1, 9):
+        return TargetEncoder(target_type="continuous", cv=KFold(5, shuffle=True, random_state=42))
+    return TargetEncoder(target_type="continuous", random_state=42)
 
 
 def agregar_features(datos):
-    # TODO: copia aqui, desde tu notebook de la sesion pasada, solo las
-    # lineas que construyen tus 2 features. Sin graficos, sin prints y sin
-    # las celdas que usaste para probar.
+    datos = datos.copy()
+    # el precio tiene cola larga (de 0.05 a 61); en log se parece mas entre productos
+    datos["PRECIO_LOG"] = np.log(datos["SELL_PRICE"])
+    # semana del anio como circulo para que la 53 quede al lado de la 1
+    angulo = 2 * np.pi * datos["WM_WEEK_OF_YEAR"] / 53
+    datos["SEMANA_SIN"] = np.sin(angulo)
+    datos["SEMANA_COS"] = np.cos(angulo)
+    for col in ["IS_SNAP", "IS_WEEKEND", "IS_EVENT_DAY", "IS_PRE_LAUNCH"]:
+        datos[col] = datos[col].astype(int)
     return datos
 
 
 def cargar_y_dividir(ruta=RUTA_DATOS):
-    datos = agregar_features(pd.read_csv(ruta))
-    X = datos[NUMERICAS + CATEGORICAS + YA_LISTAS]
+    datos = agregar_features(pd.read_csv(ruta, low_memory=False))
+    X = datos[COLUMNAS_ENTRADA]
     y = datos[OBJETIVO]
-    # TODO: decide como dividir. Si tus filas tienen fecha y vas a predecir
-    # el futuro, divide por fecha (entrenamiento antes de una fecha de corte,
-    # prueba despues) en vez de al azar.
-    return train_test_split(X, y, test_size=0.2, random_state=42)
+    # El modelo va a predecir ventas futuras, asi que se entrena con lo
+    # anterior a la fecha de corte y se prueba con lo posterior.
+    es_prueba = datos["DATE_KEY"] >= FECHA_CORTE
+    return X[~es_prueba], X[es_prueba], y[~es_prueba], y[es_prueba]
 
 
 def construir_preparacion():
@@ -54,16 +81,14 @@ def construir_preparacion():
             ("imputar", SimpleImputer(strategy="most_frequent")),
             ("codificar", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
         ]), CATEGORICAS),
+        ("producto", codificador_producto(), PRODUCTO),
         ("ya_listas", "passthrough", YA_LISTAS),
     ])
 
-
-# Esto corre con "python3 pipeline_proyecto.py", pero no cuando un
-# notebook hace "from pipeline_proyecto import ...".
 if __name__ == "__main__":
     X_ent, X_prueba, y_ent, y_prueba = cargar_y_dividir()
     preparacion = construir_preparacion()
-    X_ent_listo = preparacion.fit_transform(X_ent)
+    X_ent_listo = preparacion.fit_transform(X_ent, y_ent)
     X_prueba_listo = preparacion.transform(X_prueba)
     print("Entrenamiento:", X_ent_listo.shape, "Prueba:", X_prueba_listo.shape)
     print(list(preparacion.get_feature_names_out()))

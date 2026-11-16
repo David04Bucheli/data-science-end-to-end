@@ -110,9 +110,20 @@ Elige 10 filas de tu conjunto de prueba y escribe un prompt con algunas filas de
 
 Una tabla con las tres opciones (métrica, costo, explicabilidad) y un párrafo que diga cuál usarías en tu proyecto y por qué, con los números de tu tabla.
 
-_(tu tabla)_
+Modelos sobre el conjunto de prueba completo (39,962 filas) y el LLM sobre 10 filas. El costo del LLM es estimado: el prompt de 10 casos y 30 ejemplos pesa unos 2,000 tokens, así que los 213,430 casos de una noche (ver `docs/despliegue.md`) serían del orden de 40 millones de tokens por noche, frente a un costo casi nulo con los otros dos.
 
-_(tu decisión)_
+| | Bosque (`min_samples_leaf=20`) | Red neuronal (32, 16) | LLM con prompt |
+|---|---|---|---|
+| RMSE en prueba (39,962 filas) | 2.9332 | 2.9572 | no se midió sobre todas |
+| RMSE en las mismas 10 filas | 0.8132 | 0.6805 | 0.7746 |
+| Segundos de entrenamiento | 26.1 | 20.6 | no se entrena |
+| Parámetros | no aplica | 1,409 | no aplica |
+| Costo de predecir | casi nulo | casi nulo | alto, se paga por token en cada predicción |
+| Explicabilidad | alta: importancia de cada columna | baja: pesos sin significado individual | da una explicación, pero no se puede comprobar que sea la razón real |
+
+La línea base da 1.0488 en esas 10 filas.
+
+Usaría el bosque. Es el mejor en la prueba completa (2.9332 contra 2.9572 de la red y 3.8348 de la línea base, un 23.5% mejor que la línea base), predice casi gratis y se puede explicar con la importancia de sus columnas. La red queda a 0.024 de RMSE del bosque y entrena un poco más rápido, pero esa diferencia es muy chica y no gano nada a cambio, porque explicarla es mucho más difícil. Con el LLM la comparación es débil: sobre 10 filas, de las cuales 7 vendieron 0 unidades, un solo acierto o error cambia el RMSE, así que su 0.7746 no se puede distinguir del 0.8132 del bosque ni del 0.6805 de la red. Lo que sí es claro es el costo: predecir las 213,430 filas de cada noche con un LLM costaría del orden de 40 millones de tokens, y no hay garantía de que dé el mismo número dos veces. Para un problema con tantos casos y que se repite todos los días, un modelo clásico entrenado una vez es la opción práctica.
 
 ## Antes de la próxima sesión
 
