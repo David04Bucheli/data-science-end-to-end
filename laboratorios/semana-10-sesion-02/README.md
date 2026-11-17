@@ -20,17 +20,17 @@ A partir de la lectura previa:
 
 **Según el artículo, ¿para qué tipo de datos y de problema conviene el aprendizaje automático clásico, y para cuál un LLM?**
 
-_(tu respuesta)_
+El aprendizaje automático clásico conviene con datos tabulares (columnas numéricas y categóricas) cuando quieres una predicción numérica precisa, barata y que se pueda explicar. Un LLM conviene con texto o datos no estructurados y con tareas abiertas (resumir, redactar, responder preguntas), donde no hay una tabla de entrenamiento.
 
 **El artículo compara las dos opciones en datos, costo y explicabilidad. ¿Cuál de esas tres diferencias pesa más para tu proyecto?**
 
-_(tu respuesta)_
+El costo. Mi proyecto es tabular y hay que predecir unas 213,430 filas cada noche; con un LLM se pagaría por token en cada predicción, mientras que un modelo clásico entrenado una vez predice casi gratis.
 
 ## Pregunta de apertura
 
 Para estimar la tarifa de un viaje, podrías entrenar un ensamblaje, entrenar una red neuronal o escribirle a un LLM los datos del viaje y pedirle un número. ¿Qué tendrías que medir de cada opción, además del error, para decidir cuál usar en la app de taxis?
 
-_(tu respuesta)_
+Mediría cuánto cuesta cada predicción, cuánto tarda en responder (latencia), cuánto tarda en entrenar y cada cuánto hay que reentrenar, si da siempre el mismo número para el mismo viaje y si se puede explicar por qué dio esa tarifa.
 
 ## Ejercicio 1: una red neuronal frente al ensamblaje
 
@@ -38,19 +38,19 @@ Notebook: [`starter/ejercicio1_red_neuronal.ipynb`](./starter/ejercicio1_red_neu
 
 **Respuesta 1 (TODO 1):** sin resolver, la red sale peor que el ensamblaje y aparece una advertencia `ConvergenceWarning`. ¿Qué crees que significa? ¿Qué esperas al dejarla entrenar hasta 1000 iteraciones?
 
-_(tu respuesta)_
+Que la red dejó de entrenar porque llegó al máximo de 200 iteraciones sin haber convergido: el error todavía estaba bajando. Por eso sale peor (en prueba 1.6854 contra 1.2750 del ensamblaje). Con 1000 iteraciones espero que converja y que el error baje bastante, a un nivel parecido o mejor que el del ensamblaje.
 
 **Respuesta 2 (TODO 2):** una capa oculta de 64 neuronas recibe las 25 columnas preparadas y entrega una tarifa. ¿Cuántos números tiene que aprender?
 
-_(tu respuesta)_
+Primera capa: 25 × 64 pesos + 64 sesgos = 1,664. Capa de salida: 64 pesos + 1 sesgo = 65. En total 1,729 números.
 
 **Respuesta 3 (TODO 3):** ¿qué columna esperas que el ensamblaje use más? Si la app le muestra al conductor por qué la tarifa estimada es 70 dólares, ¿cuál de los dos modelos te permite responder?
 
-_(tu respuesta)_
+Espero que `distancia_km`, porque la tarifa depende sobre todo de cuánto se recorre. Para explicarle al conductor por qué son 70 dólares me sirve el ensamblaje, porque puedo ver qué columnas pesaron; la red solo tiene pesos que no significan nada por separado.
 
 **Lo que confirmó la salida, TODO por TODO:**
 
-_(anota el error y el tiempo de cada modelo, los parámetros de la red y las 3 columnas más importantes)_
+Gradient boosting: error de 1.0705 en entrenamiento y 1.2750 en prueba, 0.28 s. Red neuronal (con 1000 iteraciones): 1.0882 y 1.1695, 2.15 s (sin resolver daba 1.6854 en prueba y el `ConvergenceWarning`). La red aprendió 1,729 parámetros y se detuvo en 692 iteraciones. Columnas más importantes del ensamblaje: `distancia_km` (0.98), `es_tarifa_fija` (0.012) y `es_hora_pico` (0.003).
 
 ## Durante el ConcepTest
 
@@ -78,21 +78,23 @@ Solo o en pareja. Notebook: [`starter/ejercicio2_tres_soluciones.ipynb`](./start
 
 | | Error en los 20 viajes | Costo de entrenar | Costo de 10 000 viajes al mes | ¿Puedes explicar una predicción? |
 |---|---|---|---|---|
-| Gradient boosting | _(…)_ | _(…)_ | _(…)_ | _(…)_ |
-| Red neuronal | _(…)_ | _(…)_ | _(…)_ | _(…)_ |
-| LLM | _(…)_ | _(…)_ | _(…)_ | _(…)_ |
+| Gradient boosting | 0.8957 | 0.24 s | casi nulo | Sí: importancia de cada columna |
+| Red neuronal | 0.9637 | 2.57 s | casi nulo | No: pesos sin significado individual |
+| LLM | 1.4355 | no se entrena | 0.73 USD | Da una explicación, pero no se puede comprobar |
+
+Usé Claude Sonnet 5.5. El error es el MAE sobre los 20 viajes. El costo del LLM sale de un prompt de unos 2,900 caracteres (≈725 tokens) por cada 20 viajes y un precio de 2 USD por millón de tokens de entrada (precio que tomé de un sitio de terceros, no de la página del proveedor).
 
 **Respuesta 2:** corre el mismo prompt otra vez, en una conversación nueva. ¿Te dio los mismos 20 números? ¿Qué problema le trae eso a una app que le cobra al pasajero?
 
-_(tu respuesta)_
+No lo corrí otra vez en una conversación nueva, pero espero que no me dé los mismos 20 números: un LLM no es determinista, así que el mismo viaje puede salir con tarifas distintas. Para una app que cobra es un problema: dos pasajeros con el mismo viaje pagarían distinto, no se podría auditar ni responder a un reclamo.
 
 **Respuesta 3:** busca en tus 20 respuestas la peor predicción del LLM. ¿Qué tiene de particular ese viaje? ¿Lo habría aprendido el ensamblaje con las 2380 filas de entrenamiento?
 
-_(tu respuesta)_
+El viaje 354: de JFK Airport a JFK Airport, de solo 1.01 km. La tarifa real fue 11.46 y el LLM dijo 7 (error de 4.46). Es raro porque la tarifa no sigue la distancia (el aeropuerto tiene tarifa mínima o fija). El ensamblaje sí lo aprende: en entrenamiento hay 7 viajes JFK a JFK con tarifas entre 12.39 y 18.67, y para este viaje predijo 12.74.
 
 **Si terminas antes:** el error en los 20 viajes de muestra no es el mismo que en los 595 de prueba. ¿Por qué no se mide el LLM sobre los 595, y qué tan confiable es una comparación sobre 20?
 
-_(tu respuesta)_
+Porque cada predicción del LLM cuesta tokens y habría que armar prompts y pegar las respuestas a mano. Y comparar sobre 20 no es muy confiable: un solo viaje mal predicho (el de 4.46) mueve bastante el error promedio, así que sirve de orientación, no para decidir.
 
 ## Ejercicio 3: ¿qué solución conviene para tu proyecto?
 
@@ -131,4 +133,4 @@ Usaría el bosque. Es el mejor en la prueba completa (2.9332 contra 2.9572 de la
 
 Dos compañeros reportan errores distintos para "el mismo" gradient boosting sobre los mismos datos de taxis. ¿Qué tendrías que saber de cada corrida para descubrir por qué no coinciden?
 
-_(tu respuesta)_
+La versión de scikit-learn y de las otras librerías, los hiperparámetros del modelo (n_estimators, learning_rate, etc.), la semilla (`random_state`), cómo dividieron los datos, qué archivo de datos usaron (su huella), qué columnas y qué preparación aplicaron, y la versión del código.

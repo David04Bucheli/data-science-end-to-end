@@ -24,17 +24,17 @@ A partir de la lectura previa:
 
 **Según el artículo, ¿qué diferencia a una feature que tiene sentido de negocio de una que solo mejora una métrica?**
 
-_(tu respuesta)_
+Una feature con sentido de negocio traduce algo que se puede explicar con una razón del mundo real. Una que solo mejora una métrica puede predecir bien, pero nadie sabe por qué y se puede romper si cambia el contexto.
 
 **Elige uno de los ejemplos del artículo: ¿qué conocimiento del negocio traduce a una columna, y cómo?**
 
-_(tu respuesta)_
+El de la proporción de transacciones en línea: dos clientes con 5 transacciones en línea pueden ser muy distintos si uno hizo 6 en total y el otro 100. El conocimiento es que importa qué tan en línea es el cliente, y se vuelve una columna que divide las transacciones en línea entre el total.
 
 ## Pregunta de apertura
 
 La exploración encontró dos patrones que no existen como columnas: la tarifa fija entre JFK y Manhattan, y viajes que cuestan más por kilómetro a ciertas horas. El modelo solo ve columnas. ¿Cómo le das esa información?
 
-_(tu respuesta)_
+Creando columnas que lo expresen: `es_tarifa_fija` (1 si el viaje es JFK-Manhattan) y, de la fecha y hora, la hora, si es hora pico y si es fin de semana. El modelo solo ve números, así que lo que sé del negocio tiene que ir en una columna.
 
 ## Ejercicio 1: features de fecha y hora
 
@@ -42,19 +42,19 @@ Notebook: [`starter/ejercicio1_features_tiempo.ipynb`](./starter/ejercicio1_feat
 
 **Respuesta 1 (TODO 4), antes de ver la solución:** si dejas la hora como un número del 0 al 23, ¿qué tan lejos queda la hora 23 de la hora 0 para un modelo que mide distancias entre números? ¿Y en el reloj?
 
-_(tu respuesta)_
+Como número, la hora 23 queda a 23 de la hora 0, aunque en el reloj estén a una hora de distancia. Con seno y coseno la distancia es 0.26, igual que entre las 11 y las 12.
 
 **Respuesta 2 (TODO 3):** sin el TODO 3, el Paso 4 muestra un solo grupo. Con la hora pico construida, ¿esperas que la tarifa por kilómetro sea más alta o más baja en hora pico? ¿Por qué, si la tarifa depende de la distancia y de la duración?
 
-_(tu respuesta)_
+Más alta: en hora pico la mediana sube de 3.22 a 3.52 dólares por kilómetro. Aunque la tarifa dependa de la distancia y de la duración, en hora pico hay tráfico, el mismo trayecto dura más (mediana de 3.57 minutos por km contra 2.73) y cobra más.
 
 **Respuesta 3:** la duración del viaje no existe al pedir el taxi, pero la hora sí. ¿Qué parte de lo que la duración le diría al modelo puede traer `es_hora_pico`?
 
-_(tu respuesta)_
+Parte de lo que dice la duración: que a esas horas el tráfico hace los viajes más lentos y más caros por kilómetro. No da los minutos exactos de ese viaje, pero sí la tendencia, y es algo que sí se sabe al pedir el taxi.
 
 **Lo que confirmó la salida, TODO por TODO:**
 
-_(anota la tarifa por kilómetro en cada grupo y las dos distancias del Paso 5)_
+Tarifa por km (mediana): 3.22 fuera de hora pico (1842 viajes) y 3.52 en hora pico (812 viajes). Distancias del Paso 5: horas 23 y 0, como número 23 y como ciclo 0.26; horas 11 y 12, como número 1 y como ciclo 0.26.
 
 ## Durante el ConcepTest
 
@@ -76,15 +76,15 @@ Solo o en pareja. Notebook: [`starter/ejercicio2_features_zona.ipynb`](./starter
 
 **Respuesta 1:** ¿cuántos viajes tienen `es_tarifa_fija` en 1, y qué tarifa mínima y máxima tienen? ¿Qué te dice eso sobre lo que un modelo lineal puede aprender con esta columna?
 
-_(tu respuesta)_
+300 viajes tienen `es_tarifa_fija` en 1, y todos tienen tarifa mínima y máxima de 70.00. Un modelo lineal con esa columna puede aprender un salto que lleve la tarifa a 70 sin depender de la distancia; sin ella, una recta de la distancia no puede ajustar un precio fijo.
 
 **Respuesta 2:** ¿cuántas columnas crea one-hot para la zona de origen, y cuántas la codificación ordinal? Si el modelo es una regresión lineal, ¿cuál de las dos usarías, y por qué la otra le da información falsa?
 
-_(tu respuesta)_
+One-hot crea 8 columnas; la ordinal, una sola (de 0 a 7). Con regresión lineal usaría one-hot, porque la ordinal inventa un orden y una distancia entre zonas que no existen: el modelo creería que Queens "vale" más que Harlem.
 
 **Respuesta 3:** ¿qué columnas del dataset no existen al pedir el taxi? ¿Qué pasaría con el modelo si las usaras para entrenar?
 
-_(tu respuesta)_
+La duración (`duracion_min`) y la propina, porque se conocen cuando termina el viaje, no al pedir el taxi; la tarifa es lo que quiero predecir. Si las usara para entrenar, el modelo se vería muy bien en la prueba, pero en producción esas columnas no existirían: es una fuga.
 
 ## Ejercicio 3: dos features para tu proyecto
 
@@ -104,7 +104,7 @@ Debajo de cada feature: de qué hallazgo o conocimiento del dominio sale, qué e
 
 **Ruta de tu notebook de features en tu fork:**
 
-_(tu respuesta)_
+`psets/proyecto/modelado/features_proyecto.ipynb`
 
 ## Antes de la próxima sesión
 
@@ -112,4 +112,4 @@ _(tu respuesta)_
 
 Para escalar la distancia antes de entrenar, le restas la media y la divides por la desviación estándar. ¿Con qué viajes calculas esa media: con todos, o solo con los de entrenamiento? ¿Cambia algo?
 
-_(tu respuesta)_
+Solo con los de entrenamiento. Sí cambia: con todos, la media incluye viajes de prueba, que es una fuga. El número cambia poco (en la sesión siguiente 8.5576 contra 8.5034), pero la evaluación deja de ser honesta.

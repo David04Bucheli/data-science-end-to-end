@@ -30,17 +30,17 @@ A partir de la lectura previa:
 
 **Según el artículo, ¿qué tres cosas hay que versionar en un proyecto de machine learning, y con qué herramienta versiona el autor cada una?**
 
-_(tu respuesta)_
+Código, datos y modelo. El código se versiona con Git; para los datos y el modelo el autor usa herramientas aparte (creo que algo tipo DVC para los datos y un registro de modelos), porque Git no está hecho para eso.
 
 **¿Por qué no alcanza con Git para versionar los datos?**
 
-_(tu respuesta)_
+Porque los datos suelen ser archivos grandes o binarios: cada cambio guarda una copia completa, el repositorio se infla y se vuelve lento, y Git no puede mostrar qué cambió dentro de un archivo así. Por eso conviene guardar los datos aparte y en Git solo una referencia o huella.
 
 ## Pregunta de apertura
 
 Dos compañeros reportan errores distintos para "el mismo" gradient boosting sobre los mismos datos de taxis. ¿Qué tendrías que saber de cada corrida para descubrir por qué no coinciden?
 
-_(tu respuesta)_
+Los hiperparámetros de cada corrida (n_estimators, learning_rate, semilla), cómo dividieron los datos (la semilla de la división), qué archivo de datos usaron (su huella) y las versiones de las librerías y del código.
 
 ## Ejercicio 1: registrar cada corrida con MLflow
 
@@ -48,19 +48,19 @@ Notebook: [`starter/ejercicio1_registrar_corridas.ipynb`](./starter/ejercicio1_r
 
 **Respuesta 1 (antes de los TODO):** sin resolver, el notebook entrena los tres modelos e imprime sus errores. ¿Cuál de los dos gradient boosting tiene razón? ¿Qué parte de la salida te permite saberlo, y qué parte no?
 
-_(tu respuesta)_
+Ninguno tiene la razón: el gradient boosting con división 42 dio 1.2750 y el del compañero 1.1860. La salida solo muestra un error por modelo; no dice con qué semilla ni con qué datos se calculó, así que no puedo saber por qué difieren ni cuál es mejor.
 
 **Respuesta 2 (TODO 2 y 3):** de todo lo que se puede registrar de una corrida, ¿qué crees que explica la diferencia entre los dos gradient boosting? ¿Qué parámetro esperas ver distinto en la tabla del paso 5?
 
-_(tu respuesta)_
+La semilla de la división de los datos (42 contra 7). Esperaba ver `semilla_division` distinta en la tabla y lo demás igual (misma huella de datos y mismo `n_estimators`).
 
 **Respuesta 3 (TODO 4):** el registro ya tiene los parámetros y las métricas. ¿Para qué guardar además el modelo entrenado?
 
-_(tu respuesta)_
+Para poder volver a cargarlo y usarlo o reproducir su error sin tener que reentrenar. Con solo los parámetros y las métricas no tengo el modelo, y reentrenar podría dar otro resultado.
 
 **Lo que mostró la tabla del paso 5:**
 
-_(anota el error en prueba, la semilla de la división y la huella de los datos de cada corrida)_
+Bosque aleatorio (división 42): error de prueba 1.2993. Gradient boosting (división 42): 1.2750. Gradient boosting del compañero (división 7): 1.1860. La huella de los datos fue la misma en las tres (`4800204d50c0`), o sea que usaron el mismo archivo y lo único que cambió fue la semilla.
 
 ## Durante el ConcepTest
 
@@ -82,19 +82,19 @@ Solo o en pareja. Notebook: [`starter/ejercicio2_comparar_y_elegir.ipynb`](./sta
 
 **Respuesta 1:** ¿qué modelo quedó primero en el registro, y por cuánto le gana al segundo?
 
-_(tu respuesta)_
+Quedó primero la red neuronal con 1.1695 de error en prueba; le gana al gradient boosting (1.2750) por 0.1055, un 8% aproximadamente. Después vienen el bosque (1.2993), ridge (2.5565) y la línea base (12.5308).
 
 **Respuesta 2:** el paso 5 carga el modelo ganador desde el registro y vuelve a calcular su error. ¿Qué te garantiza que coincida con el número registrado? ¿Qué no te garantiza sobre ese modelo?
 
-_(tu respuesta)_
+Que es el mismo modelo guardado en el registro y los mismos datos de prueba, así que da el mismo error (reproduje 1.169505). No garantiza que funcione igual con datos nuevos ni con otra versión de las librerías: solo confirma el número sobre esos 595 viajes.
 
 **Respuesta 3:** si mañana alguien cambia una fila de `viajes_features.csv` y vuelve a entrenar, ¿cómo lo notarías mirando solo el registro?
 
-_(tu respuesta)_
+Por la huella de los datos: esa corrida tendría un `huella_datos` distinto al `4800204d50c0` de las anteriores, y seguramente también otro error.
 
 **Si terminas antes:** abre la interfaz de MLflow (pestaña **Ports**, puerto 5050), entra al experimento `tarifa-taxis-comparacion`, selecciona las cinco corridas y compáralas lado a lado con **Compare**. Además del error, ¿qué te dice el registro de la red neuronal que no te diría una tabla escrita a mano?
 
-_(tu respuesta)_
+En la interfaz puedo comparar las corridas lado a lado con sus parámetros, métricas y tiempos juntos, sin copiarlos a mano. De la red guarda sus hiperparámetros (capas, iteraciones, semilla), los segundos y el modelo, y todo con fecha y con la huella de los datos, cosas que en una tabla escrita a mano se pierden o se copian mal.
 
 ## Ejercicio 3: el registro de tu proyecto
 
@@ -119,11 +119,24 @@ La tabla de corridas de tu experimento, exportada con `mlflow.search_runs(...).t
 
 **¿Qué modelo elegiste como final? Escribe su `run_id` y los números del registro que sostienen la decisión.**
 
-_(tu respuesta)_
+Elegí el bosque con `min_samples_leaf=20`, `run_id` `2abf63a785674d0db32122197a396661`. Del registro de MLflow:
+
+| Corrida | RMSE entrenamiento | RMSE prueba | Segundos |
+|---|---|---|---|
+| bosque `min_samples_leaf=20` (final) | 2.8233 | 2.9332 | 26.1 |
+| red neuronal (32, 16) | 2.8186 | 2.9572 | 20.5 |
+| ridge `alpha=10` | 3.0879 | 3.0188 | 0.4 |
+| línea base | 3.8749 | 3.8348 | 0.3 |
+
+Es la de menor error en prueba. Cargué su modelo desde `runs:/2abf63a785674d0db32122197a396661/modelo` y reprodujo el error registrado (2.933216). La ventaja sobre la red es de 0.024, así que la decisión es ajustada; la Semana 11, Sesión 2 revisa si esa diferencia es mayor que la variación entre pliegues.
 
 **Si otra persona clona tu repositorio, ¿qué necesita para obtener exactamente el mismo número? ¿Qué de eso quedó registrado en MLflow y qué no?**
 
-_(tu respuesta)_
+Necesita el mismo archivo de datos, el mismo código de preparación, la misma división y las mismas semillas, y las mismas versiones de las librerías.
+
+**Quedó registrado en MLflow:** los hiperparámetros de cada modelo, la fecha de corte (30 de abril de 2015), la semilla (42), la huella SHA-256 del archivo de datos (para comprobar que es el mismo archivo), las métricas, los segundos y el pipeline entrenado como artefacto.
+
+**No quedó registrado:** el archivo de datos en sí (no está en el repositorio, solo su huella), la versión del código de `pipeline_proyecto.py` con que se corrió (no registré el commit de git), y las versiones de scikit-learn, pandas y numpy. Con otra versión de scikit-learn, el mismo código puede dar un número ligeramente distinto. Las semillas sí están fijas, incluida la del `TargetEncoder`, que sin semilla daba un error distinto en cada corrida.
 
 ## Antes de la próxima sesión
 
@@ -131,4 +144,4 @@ _(tu respuesta)_
 
 Hoy elegiste el modelo con menor error sobre los 595 viajes de prueba. ¿Cuánto cambiaría ese error si la división hubiera sido otra? ¿Lo viste en algún lado del registro?
 
-_(tu respuesta)_
+Cambiaría bastante. Lo vi en el registro: el mismo gradient boosting dio 1.1860 con la división 7 y 1.2750 con la 42, una diferencia de casi 0.09, parecida a la que separa a varios modelos.

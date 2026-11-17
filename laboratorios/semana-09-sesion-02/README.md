@@ -24,17 +24,17 @@ A partir de la lectura previa:
 
 **Según el artículo, ¿qué es la fuga de información, y por qué un modelo con fuga puede verse excelente en la evaluación y fallar en producción?**
 
-_(tu respuesta)_
+Es cuando información del conjunto de prueba, o que no existirá al predecir, entra al entrenamiento. El modelo se ve excelente en la evaluación porque ya "vio" parte de lo que se evalúa, y en producción esa información no está y falla.
 
 **El artículo describe varias formas en que se produce una fuga. ¿Cuál de ellas viste la sesión pasada con la duración del viaje?**
 
-_(tu respuesta)_
+La fuga por la variable objetivo (target leakage): la duración del viaje solo se conoce al terminar, cuando la tarifa ya está determinada, y no existe al pedir el taxi. Un modelo que la usara se vería muy bien en la prueba y fallaría en producción.
 
 ## Pregunta de apertura
 
 Para escalar la distancia, le restas la media y la divides por la desviación estándar. ¿Con qué viajes calculas esa media: con todos, o solo con los de entrenamiento? ¿Cambia algo?
 
-_(tu respuesta)_
+Solo con los de entrenamiento. Sí cambia: si uso todos, la media incluye viajes de prueba y es una fuga. El número cambia poco, pero la evaluación deja de ser honesta.
 
 ## Ejercicio 1: encontrar y corregir la fuga
 
@@ -47,19 +47,19 @@ python3 ejercicio1_fuga.py
 
 **Respuesta 1, antes de ver la solución:** en la versión del compañero, ¿en qué línea entra el conjunto de prueba al entrenamiento? ¿Qué número de la salida lo delata?
 
-_(tu respuesta)_
+En el `fit_transform` del imputador y del escalador, que se hace sobre todo `X` antes de dividir. Lo delata que el escalador vio 2975 filas (todas) y no las 2380 de entrenamiento.
 
 **Respuesta 2 (TODO 1 y 3):** sin resolver, la versión correcta dice que tiene 2975 filas de prueba. ¿Qué está midiendo ese error, si prueba y entrenamiento son las mismas filas?
 
-_(tu respuesta)_
+Nada útil: mide el error sobre las mismas filas con que entrenó, así que no es un error de prueba y sale optimista. No dice cómo se comporta con viajes nuevos.
 
 **Respuesta 3:** ¿cuánto esperas que cambie el error absoluto medio en prueba al corregir la fuga? Si casi no cambia, ¿significa que no había fuga?
 
-_(tu respuesta)_
+Esperaba un cambio muy pequeño, porque con dos columnas y un modelo lineal la media y la desviación casi no cambian. Salió 2.5375 antes y 2.5373 después. Que casi no cambie no significa que no hubiera fuga: el proceso sigue mal y con otros datos o modelos podría pesar bastante.
 
 **Lo que confirmó la salida, TODO por TODO:**
 
-_(anota las filas que vio cada escalador y los dos errores)_
+Versión del compañero: el escalador vio 2975 filas, media de distancia 8.5034, error 2.5375. Versión correcta: el escalador vio 2380 filas, media 8.5576, 595 filas de prueba, error 2.5373.
 
 ## Durante el ConcepTest
 
@@ -85,15 +85,15 @@ python3 ejercicio2_pipeline.py
 
 **Respuesta 1:** ¿cuántas columnas quedan después de preparar los datos? Explica de dónde sale ese número a partir de los tres grupos de columnas.
 
-_(tu respuesta)_
+25 columnas: 2 numéricas (distancia y pasajeros, escaladas) + 18 de one-hot (8 de `zona_origen`, 8 de `zona_destino` y 2 de `metodo_pago`) + 5 que pasan sin cambios (`YA_LISTAS`).
 
 **Respuesta 2:** ¿las medianas que aprendió el imputador coinciden con las de entrenamiento o con las de todo el dataset? ¿Qué demuestra eso?
 
-_(tu respuesta)_
+Coinciden con las de entrenamiento (6.94 y 1.0); las de todo el dataset son 6.93 y 1.0. Demuestra que el imputador aprendió solo de entrenamiento, aunque la diferencia sea de una centésima.
 
 **Respuesta 3:** ¿qué le pasa al viaje desde el Bronx? ¿Qué habría pasado con `pd.get_dummies` aplicado por separado a ese viaje?
 
-_(tu respuesta)_
+Con `handle_unknown="ignore"` las columnas de `zona_origen` quedan todas en 0 y el viaje no da error. Con `pd.get_dummies` por separado solo se crearía `origen_Bronx`, con columnas distintas a las del entrenamiento, y el modelo fallaría o recibiría las columnas desalineadas.
 
 ## Ejercicio 3: el pipeline de tu proyecto, como script
 
@@ -111,13 +111,17 @@ Copia de tu notebook de la sesión pasada solo las líneas que construyen tus 2 
 
 Escribe qué columnas son numéricas, cuáles categóricas y cuáles ya están listas, y cuál es el objetivo. Deja fuera toda columna que no exista al momento de predecir.
 
-_(tu clasificación)_
+- **Objetivo:** `UNITS`.
+- **Numéricas:** `PRECIO_LOG` (el log de `SELL_PRICE`) y `WDAY`.
+- **Categóricas:** `DEPT_ID` y `STORE_ID`, con one-hot. `ITEM_ID` va aparte con `TargetEncoder`, porque tiene 3049 valores y casi todos aparecen muy pocas veces.
+- **Ya listas:** `SEMANA_SIN`, `SEMANA_COS`, `IS_SNAP`, `IS_WEEKEND`, `IS_EVENT_DAY` e `IS_PRE_LAUNCH`.
+- **Fuera:** `REVENUE`, `IS_SALES_SPIKE`, `IS_SUSPECTED_STOCKOUT_CONSERVATIVE` e `IS_SUSPECTED_STOCKOUT_NB`, porque se calculan con las ventas del propio día; y las fechas y los identificadores que no aportan.
 
 ### Paso 3: decide cómo dividir (5 minutos)
 
 ¿Tu modelo predice el futuro a partir de filas con fecha? Si sí, divide por fecha dentro de `cargar_y_dividir`; si no, al azar. Justifica.
 
-_(tu decisión)_
+Sí, el modelo predice ventas futuras a partir de filas con fecha, así que divido por fecha: entrenamiento antes del 30 de abril de 2015 (159,871 filas) y prueba desde esa fecha (39,962 filas, un 20%). Una división al azar mezclaría días futuros en el entrenamiento, y el modelo parecería mejor de lo que va a ser en producción.
 
 ### Paso 4: corre el script (10 minutos)
 
@@ -129,7 +133,11 @@ python3 pipeline_proyecto.py
 
 Si corre de principio a fin en una terminal nueva, sin el notebook abierto, otro código ya lo puede importar. Anota la forma de los conjuntos de entrenamiento y prueba ya preparados, y la lista de columnas que produce.
 
-_(lo que imprimió tu script)_
+```
+Entrenamiento: (159871, 26) Prueba: (39962, 26)
+['numericas__PRECIO_LOG', 'numericas__WDAY', 'categoricas__DEPT_ID_FOODS_1', ..., 'categoricas__STORE_ID_WI_3', 'producto__ITEM_ID', 'ya_listas__SEMANA_SIN', 'ya_listas__SEMANA_COS', 'ya_listas__IS_SNAP', 'ya_listas__IS_WEEKEND', 'ya_listas__IS_EVENT_DAY', 'ya_listas__IS_PRE_LAUNCH']
+```
+Son 26 columnas: 2 numéricas, 7 de departamento y 10 de tienda (one-hot), 1 del producto y 6 ya listas.
 
 ## Antes de la próxima sesión
 
@@ -137,4 +145,4 @@ _(lo que imprimió tu script)_
 
 Ya tienes los datos listos para entrenar. Si entrenas dos modelos sobre el mismo conjunto y uno da un error mucho menor en entrenamiento que en prueba, ¿qué le está pasando?
 
-_(tu respuesta)_
+Se está sobreajustando: memorizó el entrenamiento, ruido incluido, y no aprendió el patrón general, así que falla con datos nuevos.

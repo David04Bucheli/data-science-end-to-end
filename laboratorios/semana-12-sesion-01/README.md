@@ -24,17 +24,17 @@ A partir de la lectura previa:
 
 **Según el artículo, ¿qué distingue un sistema de predicción batch de uno online? Da un ejemplo de cada uno.**
 
-_(tu respuesta)_
+El batch calcula las predicciones de muchos casos juntos cada cierto tiempo (por ejemplo cada noche) y las guarda en una tabla que luego se lee. El online responde cada petición en el momento en que llega, con baja latencia. Ejemplo de batch: las tarifas de los viajes reservados, calculadas de noche. Ejemplo de online: decidir si un pago es fraude al cobrarlo.
 
 **¿Qué limitación tiene el sistema batch que el online resuelve, y qué cuesta resolverla?**
 
-_(tu respuesta)_
+El batch no puede reaccionar a casos nuevos ni a datos recientes: si aparece algo que no estaba en el lote, no hay predicción, y las que hay pueden estar viejas. El online lo resuelve, pero cuesta: un servidor siempre encendido, respuestas rápidas, más monitoreo y más complejidad.
 
 ## Pregunta de apertura
 
 La app de taxis usa dos modelos: uno estima la tarifa antes de pedir el viaje, otro decide si un pago es fraude. ¿Alguno de los dos se podría calcular una vez por noche para todos los casos posibles? ¿Cuál tiene que responder en el momento, y en cuánto tiempo?
 
-_(tu respuesta)_
+La tarifa se podría precalcular para los viajes reservados (es el lote de hoy), pero no para todos los casos posibles porque hay demasiadas combinaciones. El modelo de fraude tiene que responder en el momento del pago, en menos de un segundo, porque la decisión depende de ese pago y el pasajero está esperando.
 
 ## Ejercicio 1: la tarifa de los viajes programados, por lotes
 
@@ -50,23 +50,23 @@ pytest -v
 
 **Respuesta 1 (antes de los TODO):** sin resolver, `predecir_lote.py` escribe una tabla con una sola columna, y `pytest` dice `1 failed, 2 passed`. ¿Cómo pueden pasar dos pruebas si el script no estima ninguna tarifa?
 
-_(tu respuesta)_
+Porque las pruebas de los `TODO` 4 y 5 solo tienen comentarios y ningún `assert`, y una prueba sin `assert` no puede fallar. Pasan sin comprobar nada; la que falla es la de las columnas de salida.
 
 **Respuesta 2 (TODO 1 y 2):** 4 de los 60 viajes no tienen pasajeros y 2 no tienen método de pago. ¿Esperas que el script falle en esos viajes, que los salte, o que les estime una tarifa? ¿Por qué?
 
-_(tu respuesta)_
+Esperaba que les estimara una tarifa: la preparación imputa los valores que faltan antes del modelo. Así fue: los 4 viajes sin pasajeros recibieron tarifa.
 
 **Respuesta 3 (TODO 3):** todas las filas de la tabla llevan la misma `version_modelo`. ¿Para qué guardarla en cada fila?
 
-_(tu respuesta)_
+Para saber qué modelo produjo cada tarifa. Si un pasajero reclama o si reentrenamos, con la versión puedo rastrear qué modelo la calculó y comparar con otro.
 
 **Respuesta 4 (TODO 4 y 5):** antes de escribir las dos pruebas, ¿qué cambio en `predecir_lote.py` haría fallar la del `TODO 4`? ¿Y la del `TODO 5`?
 
-_(tu respuesta)_
+El del `TODO 4` fallaría si `predecir_lote` descartara viajes (por ejemplo con `dropna`) o cambiara el orden. El del `TODO 5` fallaría si dejara de imputar y las filas con pasajeros vacíos terminaran sin tarifa.
 
 **Lo que mostró el lote:**
 
-_(anota la versión del modelo, la tarifa más baja, la más alta, y qué tarifa recibieron los viajes sin pasajeros)_
+Versión del modelo `582f6e7471b8`. Tarifa más baja 4.67 y más alta 70.26. Los 4 viajes sin pasajeros recibieron 33.94, 29.88, 25.80 y 17.58.
 
 ## Durante el ConcepTest
 
@@ -88,19 +88,19 @@ Solo o en pareja. Carpeta: [`starter/ejercicio2/`](./starter/ejercicio2/). Cada 
 
 **Respuesta 1:** ¿cuántos pagos quedaron en la cola de revisión? ¿Cuántos fraudes esperarías encontrar en los 300 pagos, si la proporción es la de la Semana 11?
 
-_(tu respuesta)_
+26 pagos en la cola, con el umbral de 0.10. Esperaría unos 15 fraudes en 300 pagos (4.9% según la Semana 11, 295 de 6000). Hay más pagos en la cola que fraudes esperados porque con un umbral bajo entran falsas alarmas.
 
 **Respuesta 2:** este modelo corre por lotes, una vez al día. ¿Qué pierde la empresa por no evaluar cada pago en el momento en que ocurre? ¿Qué tendría que pasar con la revisión para que eso importe?
 
-_(tu respuesta)_
+Pierde tiempo: un fraude se detecta hasta el día siguiente, cuando el cobro ya se hizo y no se puede frenar. Importaría si la revisión tuviera que actuar en minutos, por ejemplo bloquear la tarjeta antes de que se repita el fraude.
 
 **Respuesta 3:** la prueba de la cola de revisión arma su propia tabla de cuatro pagos con probabilidades escritas a mano, en vez de usar el modelo. ¿Qué gana la prueba con eso?
 
-_(tu respuesta)_
+Que la prueba solo revisa la lógica de la cola (que entren los pagos que alcanzan el umbral y en orden de probabilidad) y no depende del modelo ni de los datos. Como las probabilidades se conocen de antemano, se sabe exacto qué debe salir, y además incluye un pago justo en 0.10 para probar el borde.
 
 **Si terminas antes:** sube `UMBRAL` a 0.50 y vuelve a correr `puntuar_pagos.py`. ¿Cuántos pagos quedan en la cola? ¿Siguen pasando todas las pruebas? ¿Por qué?
 
-_(tu respuesta)_
+Quedan 13 pagos en la cola, contra 26. Las pruebas siguen pasando porque la prueba de la cola escribe su propio umbral (0.10) al llamar a `a_revisar` y no usa la constante `UMBRAL` del script.
 
 ## Ejercicio 3: el despliegue y las pruebas de tu proyecto
 
@@ -135,7 +135,7 @@ _(tu respuesta)_
 
 **¿Qué patrón elegiste para tu proyecto, y qué número de latencia lo decide?**
 
-_(tu respuesta)_
+Por lotes. Lo decide la latencia que tolera la decisión: el pedido de inventario se hace una vez al día, por la mañana, así que la predicción puede esperar horas, siempre que esté lista antes de las 6:00 a.m. Además, los 213,430 casos de cada noche (3,049 productos × 10 tiendas × 7 días) se conocen de antemano. El detalle está en `docs/despliegue.md`.
 
 **Rompe a propósito una de tus pruebas (cambia un valor esperado), haz push y mira qué pasa en GitHub. Después arréglala. ¿Qué te dijo GitHub, y dónde lo viste?**
 
@@ -147,4 +147,4 @@ _(tu respuesta)_
 
 Hoy la app lee las tarifas de una tabla calculada de noche. Pero cuando un pasajero escribe un destino que no estaba reservado, no hay ninguna fila que leer. ¿Qué tendría que existir para que la app le pregunte al modelo en ese momento, y qué le mandaría?
 
-_(tu respuesta)_
+Tendría que existir un servicio (una API) siempre encendido, que cargue el modelo y responda cada petición. La app le mandaría el viaje como JSON: fecha y hora, zona de origen, zona de destino, distancia, pasajeros y método de pago; el servicio calcula el resto de las features y devuelve la tarifa estimada.

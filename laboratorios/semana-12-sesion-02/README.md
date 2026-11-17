@@ -16,17 +16,17 @@ A partir de la lectura previa:
 
 **Según el artículo, ¿qué pasos separan un modelo entrenado en un notebook de un modelo que otra aplicación puede usar?**
 
-_(tu respuesta)_
+Guardar el modelo entrenado en un archivo, escribir una API que lo cargue y reciba los datos de entrada, validar esas entradas, probar el servicio y empaquetarlo en un contenedor para desplegarlo en un servidor, donde otra aplicación lo llama.
 
 **¿Para qué usa el artículo un contenedor, si el servicio ya corre en la máquina de quien lo escribió?**
 
-_(tu respuesta)_
+Para que el servicio corra igual en cualquier máquina: el contenedor lleva el código, el modelo y las versiones exactas de Python y las librerías. Así se evita el "en mi máquina sí funciona".
 
 ## Pregunta de apertura
 
 La sesión pasada, la app leía las tarifas de una tabla calculada de noche. Cuando un pasajero escribe un destino que no estaba reservado, no hay ninguna fila que leer. ¿Qué tendría que existir para que la app le pregunte al modelo en ese momento, y qué le mandaría?
 
-_(tu respuesta)_
+Un servicio online (una API) al que la app le mande el viaje en ese momento: fecha y hora, zonas de origen y destino, distancia, pasajeros y método de pago. El servicio calcula el resto de las features y devuelve la tarifa estimada.
 
 ## Ejercicio 1: la tarifa, como servicio
 
@@ -48,27 +48,27 @@ curl -X POST localhost:8000/predecir -H "Content-Type: application/json" -d '{"f
 
 **Respuesta 1 (antes de los TODO):** sin resolver, `/salud` dice que el modelo está cargado, `/predecir` responde 200 y `pytest` dice `3 passed`. ¿Qué de esa salida debería preocuparte?
 
-_(tu respuesta)_
+Que "todo ok" no demuestra que el servicio sirva: las pruebas pasan aunque no revisen que la tarifa sea correcta ni que se rechacen viajes mal armados (los `TODO` 3 y 4 no tienen `assert`), y `/salud` solo dice que el modelo está cargado.
 
 **Respuesta 2 (TODO 1):** con el esquema completo, ¿qué esperas que responda el servicio a un viaje sin `distancia_km`? ¿Y a uno sin `zona_origen`?
 
-_(tu respuesta)_
+Sin `distancia_km` responde 200 con una tarifa, porque es opcional y la preparación la imputa. Sin `zona_origen` responde 422, porque es obligatoria.
 
 **Respuesta 3 (TODO 2):** el modelo se entrenó con `hora_sin`, `hora_cos` y `es_hora_pico`, pero la app manda solo la fecha y hora. ¿Qué pasaría si el servicio calculara `es_hora_pico` con otras horas que las del entrenamiento?
 
-_(tu respuesta)_
+El modelo recibiría una feature distinta a la que aprendió y daría una tarifa mal calculada sin ningún error a la vista (training-serving skew). Por eso el servicio reutiliza `features_taxis.py` para calcularla igual que en el entrenamiento.
 
 **Respuesta 4 (TODO 3 y 4):** el código 422 del viaje sin zona de origen, ¿lo produce tu código o FastAPI? ¿La petición llega al modelo?
 
-_(tu respuesta)_
+Lo produce FastAPI, automáticamente, con el esquema `Viaje` (pydantic). La petición no llega al modelo: se rechaza antes de entrar a la función `predecir`.
 
 **Respuesta 5 (TODO 5):** construye y corre la imagen con el `CMD` sin resolver (`docker build -t servicio-tarifa .` y `docker run -p 8000:8000 servicio-tarifa`). El log dice que uvicorn está corriendo, pero `curl localhost:8000/salud` falla. ¿Por qué?
 
-_(tu respuesta)_
+Por la dirección donde escucha uvicorn. Dentro del contenedor, por defecto escucha en `127.0.0.1`, que solo se ve desde adentro; con `-p 8000:8000` la petición llega desde afuera y no encuentra nada. Hay que arrancarlo con `--host 0.0.0.0`. (Respondido de lo que sé: no pude correr Docker.)
 
 **Lo que respondió el servicio:**
 
-_(anota la tarifa del viaje de Midtown al aeropuerto, y la respuesta completa al viaje sin zona de origen)_
+Tarifa del viaje de Midtown al aeropuerto: 70.39. Viaje sin zona de origen: código 422 con `{"detail": [{"type": "missing", "loc": ["body", "zona_origen"], "msg": "Field required", ...}]}`.
 
 ## Durante el ConcepTest
 
@@ -90,19 +90,19 @@ Solo o en pareja. Carpeta: [`starter/ejercicio2/`](./starter/ejercicio2/). La se
 
 **Respuesta 1:** levanta el servicio y evalúa dos pagos: uno de madrugada, por app, con tarjeta nueva, dos intentos fallidos y ningún viaje previo; otro de la tarde, con tarjeta conocida y 22 viajes previos. ¿Qué probabilidad y qué decisión recibió cada uno?
 
-_(tu respuesta)_
+Con los pagos de `comprobar.py`: el de madrugada, por app, con tarjeta nueva, dos intentos fallidos y ningún viaje previo recibió probabilidad 0.9996 y `revisar: true`. El de la tarde, con tarjeta conocida y 22 viajes previos, recibió 0.0159 y `revisar: false`.
 
 **Respuesta 2:** el servicio devuelve la decisión (`revisar`) además de la probabilidad. ¿Qué gana la app con eso? ¿Qué tendría que cambiar si la empresa decide mañana que el umbral es 0.20?
 
-_(tu respuesta)_
+La app recibe la decisión ya tomada y no necesita conocer el umbral ni repetir la lógica. Si el umbral pasa a 0.20 solo se cambia `UMBRAL` en el servicio y se vuelve a desplegar; la app no cambia.
 
 **Respuesta 3:** el mismo pago, evaluado por este servicio y por el lote de la sesión pasada, ¿da la misma probabilidad? ¿Qué tiene que ser igual en los dos para que así sea?
 
-_(tu respuesta)_
+Debería dar la misma, si es el mismo modelo (el mismo archivo `.joblib`), las features se calculan igual (la misma `agregar_features`) y las columnas entran en el mismo orden.
 
 **Si terminas antes:** manda a `/evaluar_pago` un pago con `"monto": "cuarenta"`. ¿Qué responde el servicio, y qué línea de `servicio_fraude.py` produce esa respuesta?
 
-_(tu respuesta)_
+Responde 422: FastAPI dice que el valor no es un número válido ("Input should be a valid number"). Lo produce la línea `monto: float` del esquema `Pago` en `servicio_fraude.py`.
 
 ## Ejercicio 3: el servicio de tu proyecto
 
@@ -126,11 +126,26 @@ En `proyecto/README.md`, agrega la sección **Cómo correr el servicio**: cómo 
 
 **¿Qué datos recibe tu servicio, y cuáles de tus features calcula él mismo? ¿Cómo sabes que las calcula igual que en el entrenamiento?**
 
-_(tu respuesta)_
+Recibe los datos como los conoce quien llama: producto, departamento, tienda, precio de lista (puede ir vacío si el producto aún no se vende), día de la semana, semana del año y los indicadores de SNAP, fin de semana, día de evento y pre-lanzamiento. El servicio calcula él mismo `PRECIO_LOG`, `SEMANA_SIN` y `SEMANA_COS`, y la codificación del producto, el departamento y la tienda la hace la preparación guardada dentro del modelo.
+
+Sé que las calcula igual que en el entrenamiento por dos razones. La primera, que el servicio importa `agregar_features` de `modelado/pipeline_proyecto.py`, la misma función que usó el entrenamiento, sin copiarla. La segunda, que una prueba (`test_el_servicio_calcula_las_features_como_el_entrenamiento`) comprueba que la fila que el servicio le pasa al modelo es idéntica a la que produce `agregar_features` sobre los mismos datos.
 
 **Pega una petición a tu servicio corriendo en el contenedor, y su respuesta:**
 
-_(tu respuesta)_
+Petición (el servicio levantado con `uvicorn servicio.api:app --port 8000`):
+
+```
+curl -X POST localhost:8000/prediccion -H "Content-Type: application/json" \
+  -d '{"item_id":"FOODS_3_090","dept_id":"FOODS_3","store_id":"CA_1","sell_price":1.5,"wday":3,"semana_del_anio":20,"is_snap":true,"is_weekend":false,"is_event_day":false,"is_pre_launch":false}'
+```
+
+Respuesta:
+
+```
+{"unidades_estimadas":10.276,"version_modelo":"2abf63a785674d0db32122197a396661"}
+```
+
+Con `"wday": 8` responde 422: `Input should be less than or equal to 7`.
 
 ## Antes de la próxima sesión
 
@@ -138,4 +153,4 @@ _(tu respuesta)_
 
 Tu servicio carga `modelo.joblib`, el archivo que exportaste hoy. Si la semana que viene reentrenas y vuelves a exportar, el archivo se reemplaza. Si mañana un usuario reclama por una predicción de hoy, ¿cómo sabrías qué modelo la produjo? ¿Y cómo volverías al modelo anterior si el nuevo resulta peor?
 
-_(tu respuesta)_
+Guardaría cada modelo con un nombre o una huella de versión (como la del lote) y la devolvería en la respuesta o en un log, para ligar cada predicción a su modelo. No sobrescribiría el archivo: conservaría el anterior (o lo registraría en MLflow), y para volver atrás bastaría cargar el archivo anterior y reiniciar el servicio.

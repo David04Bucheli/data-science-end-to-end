@@ -1,0 +1,29 @@
+modelo,esquema,pliegue,rmse,costo_negocio
+bosque min_samples_leaf=20,temporal,1,3.244,2.0678
+bosque min_samples_leaf=20,temporal,2,3.8634,2.267
+bosque min_samples_leaf=20,temporal,3,3.1247,2.3446
+bosque min_samples_leaf=20,temporal,4,3.2262,2.4063
+bosque min_samples_leaf=20,temporal,5,2.7858,2.3597
+"red neuronal (32, 16)",temporal,1,3.2423,2.1829
+"red neuronal (32, 16)",temporal,2,3.8771,2.3785
+"red neuronal (32, 16)",temporal,3,3.1158,2.3997
+"red neuronal (32, 16)",temporal,4,3.179,2.4249
+"red neuronal (32, 16)",temporal,5,2.7608,2.3947
+bosque min_samples_leaf=20,al azar,1,3.0547,2.0713
+bosque min_samples_leaf=20,al azar,2,2.7549,2.0331
+bosque min_samples_leaf=20,al azar,3,3.6372,2.1061
+bosque min_samples_leaf=20,al azar,4,2.6629,1.9586
+bosque min_samples_leaf=20,al azar,5,2.8687,2.0549
+"red neuronal (32, 16)",al azar,1,3.0086,2.0812
+"red neuronal (32, 16)",al azar,2,2.7148,2.1029
+"red neuronal (32, 16)",al azar,3,3.6082,2.1699
+"red neuronal (32, 16)",al azar,4,2.6454,1.9554
+"red neuronal (32, 16)",al azar,5,2.8443,2.0891
+bosque min_samples_leaf=20,al azar,promedio,2.9957,2.0448
+bosque min_samples_leaf=20,temporal,promedio,3.2488,2.2891
+"red neuronal (32, 16)",al azar,promedio,2.9643,2.0797
+"red neuronal (32, 16)",temporal,promedio,3.235,2.3561
+bosque min_samples_leaf=20,al azar,desviacion,0.3873,0.0551
+bosque min_samples_leaf=20,temporal,desviacion,0.3899,0.1334
+"red neuronal (32, 16)",al azar,desviacion,0.3857,0.0778
+"red neuronal (32, 16)",temporal,desviacion,0.4045,0.0983

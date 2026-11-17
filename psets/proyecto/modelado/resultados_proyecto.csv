@@ -1,0 +1,7 @@
+modelo,rmse_entrenamiento,rmse_prueba,brecha,segundos
+linea base (mediana),3.8749,3.8348,-0.0401,0.309
+lineal sin regularizar,3.0879,3.0188,-0.0691,0.387
+ridge alpha=10,3.0879,3.0188,-0.0691,0.335
+bosque sin limite,2.1645,3.0159,0.8514,34.854
+bosque min_samples_leaf=20,2.8233,2.9332,0.1099,26.751
+gradient boosting,2.8946,2.9595,0.0649,20.898
