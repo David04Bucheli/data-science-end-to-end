@@ -39,7 +39,7 @@ def test_precio_log_es_el_logaritmo_del_precio():
     datos = viajes_de_prueba()
     datos.loc[0, "SELL_PRICE"] = np.e
     resultado = agregar_features(datos)
-    assert resultado.loc[0, "PRECIO_LOG"] == 1.0
+    assert np.isclose(resultado.loc[0, "PRECIO_LOG"], 1.0)
 
 
 def test_la_semana_53_queda_cerca_de_la_semana_1():
