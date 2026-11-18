@@ -131,7 +131,7 @@ El archivo [`.github/workflows/pruebas.yml`](../../.github/workflows/pruebas.yml
 
 **Pega el enlace a la ejecución de GitHub Actions donde pasan tus pruebas:**
 
-_(tu respuesta)_
+https://github.com/David04Bucheli/data-science-end-to-end/actions/runs/44325768741 
 
 **¿Qué patrón elegiste para tu proyecto, y qué número de latencia lo decide?**
 
@@ -139,7 +139,7 @@ Por lotes. Lo decide la latencia que tolera la decisión: el pedido de inventari
 
 **Rompe a propósito una de tus pruebas (cambia un valor esperado), haz push y mira qué pasa en GitHub. Después arréglala. ¿Qué te dijo GitHub, y dónde lo viste?**
 
-_(tu respuesta)_
+GitHub marcó la ejecución con una X roja junto al commit. Lo vi en la pestaña Actions, dentro del paso de pytest: decía que falló test_precio_log_es_el_logaritmo_del_precio y mostraba el assert con el valor esperado y el obtenido. Al corregir el valor y hacer push, volvió la marca verde.
 
 ## Antes de la próxima sesión
 

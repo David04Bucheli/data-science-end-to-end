@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir -r servicio/requirements.txt
 COPY modelado/pipeline_proyecto.py modelado/pipeline_proyecto.py
 COPY servicio/api.py servicio/api.py
 COPY servicio/modelo.joblib servicio/modelo.joblib
-COPY servicio/modelo_info.json servicio/modelo_info.json
+COPY servicio/modelo_version.txt servicio/modelo_version.txt
 
 EXPOSE 8000
 CMD ["uvicorn", "servicio.api:app", "--host", "0.0.0.0", "--port", "8000"]

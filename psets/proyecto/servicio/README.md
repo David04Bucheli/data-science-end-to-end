@@ -2,13 +2,21 @@
 
 El servicio devuelve las unidades estimadas de un producto en una tienda y un día. Todo se corre desde `psets/proyecto/`.
 
-**1. Exportar el modelo final desde MLflow.** Con el servidor de MLflow corriendo, pasa el `run_id` de la corrida marcada como `candidato = final`:
+**0. Registrar y promover el modelo.** El modelo vive en el registro de MLflow como `ventas-walmart-m5`. Cada corrida de `registrar_modelo.py` crea una versión nueva (el argumento es `min_samples_leaf` del bosque); `promover.py` pone el alias `produccion` en la que se va a servir, con el motivo opcional:
 
 ```
-python3 servicio/exportar_modelo.py 2abf63a785674d0db32122197a396661
+python -m servicio.registrar_modelo 20
+python -m servicio.registrar_modelo 5
+python -m servicio.promover 1 "menor rmse_prueba que la version 2"
 ```
 
-Eso crea `servicio/modelo.joblib` (no se sube al repositorio) y `servicio/modelo_info.json`, que guarda de qué corrida salió el archivo.
+**1. Exportar el modelo en producción desde MLflow.** Con el servidor de MLflow corriendo, sin argumentos: exporta la versión que tiene el alias `produccion`.
+
+```
+python3 servicio/exportar_modelo.py
+```
+
+Eso crea `servicio/modelo.joblib` y `servicio/modelo_version.txt` (el número de versión del registro). Ninguno se sube al repositorio, y la imagen los copia adentro: el contenedor no necesita llegar al servidor de MLflow.
 
 **2. Levantarlo sin contenedor**, para probar:
 
@@ -30,7 +38,7 @@ curl localhost:8000/salud
 ```
 
 ```
-{"estado":"ok"}
+{"estado":"ok","version_modelo":"1"}
 ```
 
 ```
@@ -39,10 +47,10 @@ curl -X POST localhost:8000/prediccion -H "Content-Type: application/json" \
 ```
 
 ```
-{"unidades_estimadas":10.276,"version_modelo":"2abf63a785674d0db32122197a396661"}
+{"unidades_estimadas":10.276,"version_modelo":"1"}
 ```
 
-Los campos `sell_price`, `is_snap`, `is_weekend`, `is_event_day` e `is_pre_launch` son opcionales; `sell_price` va vacío cuando el producto todavía no se vende. Un `wday` fuera de 1 a 7, o un campo obligatorio que falta, devuelve 422.
+`/salud` y cada predicción dicen qué versión del registro las calculó (`version_modelo`). Los campos `sell_price`, `is_snap`, `is_weekend`, `is_event_day` e `is_pre_launch` son opcionales; `sell_price` va vacío cuando el producto todavía no se vende. Un `wday` fuera de 1 a 7, o un campo obligatorio que falta, devuelve 422.
 
 Las pruebas del servicio no necesitan `modelo.joblib`: usan un modelo de juguete.
 

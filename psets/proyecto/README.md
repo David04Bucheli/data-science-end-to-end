@@ -1,8 +1,8 @@
-# [Nombre de tu proyecto]
+# Predicción de ventas por producto y tienda (Walmart M5)
 
 > Este es el README de tu proyecto: reemplaza cada sección entre corchetes a medida que avanzas. Escríbelo para alguien que clona tu fork sin haber estado en clase y necesita entender qué hace el proyecto y correrlo, no como una nota para ti.
 
-[Un párrafo: qué problema de negocio resuelve, para quién, y qué predice el modelo. Sale de tu propuesta del PSet 1, que está completa en `docs/`.]
+Predice `UNITS`, las unidades vendidas de un producto en una tienda y un día, para que el equipo de inventario de cada tienda decida cuánto pedir de cada producto. La predicción se sirve por lotes (cada noche, 7 días hacia adelante) y también por una API para casos puntuales; ver `docs/despliegue.md`.
 
 **Métrica de éxito:** [la métrica de negocio y el umbral de decisión del PSet 1]
 
@@ -20,12 +20,31 @@ Los datos no están en el repositorio. Para regenerarlos desde cero: [los comand
 
 ## Cómo entrenar y evaluar el modelo
 
-[Qué notebook corre cada etapa del modelado, en qué orden, y qué necesita levantado (MLflow). Se completa con el PSet 3.]
+Los notebooks de `modelado/` importan la preparación de `modelado/pipeline_proyecto.py` y se corren en este orden: `explorar_proyecto`, `features_proyecto`, `modelos_proyecto` (línea base, lineales y ensamblajes), `experimentos_proyecto` (una corrida de MLflow por modelo; marca la final con `candidato = final`), `comparar_proyecto` (bosque, red neuronal y LLM) y `validacion_proyecto` (validación cruzada temporal y métrica de negocio). `experimentos_proyecto` necesita el servidor de MLflow levantado. Las pruebas de la preparación: `pytest modelado`.
 
 ## Modelo final
 
-[El modelo elegido, su `run_id` en MLflow y la métrica que lo sostiene. El razonamiento completo está en `docs/decision_modelo.md`. Se completa con el PSet 3.]
+Bosque aleatorio (`RandomForestRegressor`, 100 árboles, `min_samples_leaf=20`) sobre la preparación de `pipeline_proyecto.py`. Corrida de MLflow `2abf63a785674d0db32122197a396661`, `rmse_prueba` = 2.9332 (división por fecha, corte 2015-04-30). Está en el registro como `ventas-walmart-m5`; la versión 1 es la que tiene el alias `produccion`. Criterio de promoción y cómo volver a una versión anterior: `docs/despliegue.md`, sección «Versionado y registro».
 
 ## Cómo correr el servicio
 
-[Cómo se construye y se levanta el contenedor de `servicio/`, qué versión del modelo carga desde el registro, y un ejemplo de petición con su respuesta. Se completa con el PSet 4.]
+Desde `psets/proyecto/`, con MLflow levantado:
+
+```
+python -m servicio.registrar_modelo 20    # versión 1 (la final)
+python -m servicio.registrar_modelo 5     # versión 2 (candidata)
+python -m servicio.promover 1 "menor rmse_prueba"
+python3 servicio/exportar_modelo.py       # exporta la versión con alias produccion
+docker build -f servicio/Dockerfile -t servicio-ventas .
+docker run -p 8000:8000 servicio-ventas
+```
+
+La imagen lleva adentro `modelo.joblib` y `modelo_version.txt`: el contenedor no necesita llegar a MLflow, y `/salud` y cada predicción responden `version_modelo`. Ejemplo:
+
+```
+curl -X POST localhost:8000/prediccion -H "Content-Type: application/json" \
+  -d '{"item_id":"FOODS_3_090","dept_id":"FOODS_3","store_id":"CA_1","sell_price":1.5,"wday":3,"semana_del_anio":20,"is_snap":true}'
+{"unidades_estimadas":10.276,"version_modelo":"1"}
+```
+
+Detalle en `servicio/README.md`.

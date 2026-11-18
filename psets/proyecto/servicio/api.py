@@ -5,7 +5,6 @@ Se levanta desde psets/proyecto/:
     uvicorn servicio.api:app --port 8000
 """
 
-import json
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -44,16 +43,18 @@ def cargar_modelo():
     return joblib.load(RUTA_MODELO)
 
 
+@lru_cache
 def version_modelo():
-    info = CARPETA / "modelo_info.json"
-    if info.exists():
-        return json.loads(info.read_text(encoding="utf-8")).get("run_id", "desconocida")
+    """La version del registro de MLflow que exportar_modelo.py guardo junto al modelo."""
+    archivo = CARPETA / "modelo_version.txt"
+    if archivo.exists():
+        return archivo.read_text(encoding="utf-8").strip()
     return "desconocida"
 
 
 @app.get("/salud")
 def salud():
-    return {"estado": "ok"}
+    return {"estado": "ok", "version_modelo": version_modelo()}
 
 
 @app.post("/prediccion")

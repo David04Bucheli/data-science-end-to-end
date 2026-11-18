@@ -9,8 +9,10 @@ from servicio.api import app, cargar_modelo
 
 
 @pytest.fixture
-def cliente():
-    """Un modelo de juguete entrenado con 20 filas escritas a mano: el modelo.joblib real no existe en GitHub."""
+def cliente(monkeypatch):
+    """Un modelo de juguete entrenado con 20 filas escritas a mano: el modelo.joblib real no existe en GitHub.
+    La version tambien es de juguete ("7", inventada): modelo_version.txt tampoco existe en GitHub."""
+    monkeypatch.setattr("servicio.api.version_modelo", lambda: "7")
     n = 20
     datos = pd.DataFrame({
         "ITEM_ID": [f"FOODS_3_{i % 4:03d}" for i in range(n)],
@@ -44,7 +46,7 @@ VENTA_VALIDA = {
 def test_salud(cliente):
     respuesta = cliente.get("/salud")
     assert respuesta.status_code == 200
-    assert respuesta.json() == {"estado": "ok"}
+    assert respuesta.json() == {"estado": "ok", "version_modelo": "7"}
 
 
 def test_prediccion_valida(cliente):
@@ -53,6 +55,12 @@ def test_prediccion_valida(cliente):
     cuerpo = respuesta.json()
     assert cuerpo["unidades_estimadas"] >= 0
     assert "version_modelo" in cuerpo
+
+
+def test_cada_prediccion_dice_que_version_la_calculo(cliente):
+    respuesta = cliente.post("/prediccion", json=VENTA_VALIDA)
+    assert respuesta.status_code == 200
+    assert respuesta.json()["version_modelo"] == "7"
 
 
 def test_producto_sin_precio_se_acepta(cliente):
